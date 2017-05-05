@@ -1,0 +1,17 @@
+# depslib dependency file v1.0
+1493947462 source:/home/achyle/Documents/Infographie/main.cpp
+	"tgaimage.h"
+	<iostream>
+	<cstdlib>
+
+1493940283 /home/achyle/Documents/Infographie/tgaimage.h
+	<fstream>
+
+1493940283 source:/home/achyle/Documents/Infographie/tgaimage.cpp
+	<iostream>
+	<fstream>
+	<string.h>
+	<time.h>
+	<math.h>
+	"tgaimage.h"
+
