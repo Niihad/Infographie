@@ -6,9 +6,9 @@ Matrix::Matrix(int nb, int mb){
     n = nb;
 	m = mb;
 	matrices = new float*[n];
-	for (int i=0; i<n; i++){
+	for (unsigned int i=0; i<n; i++){
 		matrices[i] = new float[m];;
-		for (int j=0; j<m; j++){
+		for (unsigned int j=0; j<m; j++){
 			matrices[i][j] = 0.f;
 		}
     }

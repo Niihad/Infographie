@@ -82,7 +82,7 @@ bool barycentric(float aire_e, FloatElement *e, FloatElement &p, float &alpha, f
     return ((fabs(res - 1) < 0.01)) ? true : false;
 }
 
-void triangle(FloatElement *e, FloatElement *e_text, float **z_buffer, TGAImage &image, TGAImage &texture) {
+void triangle(FloatElement *e, FloatElement *e_text, float **z_buffer, TGAImage &image, TGAImage &texture, float intensity) {
     FloatElement bbmin(std::max(0.f,std::min((float)image.get_width()-1,std::min(e[0].x,std::min(e[1].x,e[2].x)))),
                      std::max(0.f,std::min((float)image.get_height()-1,std::min(e[0].y,std::min(e[1].y,e[2].y)))));
     FloatElement bbmax(std::min((float)image.get_width()-1,std::max(e[0].x,std::max(e[1].x,e[2].x))),
@@ -100,7 +100,7 @@ void triangle(FloatElement *e, FloatElement *e_text, float **z_buffer, TGAImage 
                     txtX = (e_text[0].x*alpha + e_text[1].x*beta + e_text[2].x*gamma)*texture.get_width();
                     txtY = (e_text[0].y*alpha + e_text[1].y*beta + e_text[2].y*gamma)*texture.get_height();
                     TGAColor color = texture.get(txtX,txtY);
-                    image.set(i, j, color);
+                    image.set(i, j, TGAColor(color.bgra[2]*intensity, color.bgra[1]*intensity, color.bgra[0]*intensity));
                 }
             }
         }
@@ -137,25 +137,25 @@ int main(int argc, char** argv) {
     vector<vector<IntElement> > list = model->getFaces();
     cout << "Nombre de face est de " << list.size() << endl;
     for (unsigned int i=0; i<list.size(); i++) {
-        FloatElement pts[3], normls[3], textures[3];
+        FloatElement pts[3], current[3], textures[3];
     	vector<IntElement> face = model->getFace(i);
     	for (int j=0; j<3; j++) {
 			FloatElement v0 = model->getElement(0,face[j].x);
             FloatElement v1 = model->getElement(1,face[j].y);
             pts[j] = tmp.convMtoE(view*perse*tmp.convEtoM(v0));
             textures[j] = FloatElement(v1.x, v1.y, v1.z);
-            normls[j] = v0;
+            current[j] = v0;
     	}
     	/* calcule des vecteurs ab et ac */
-    	FloatElement ab = (normls[1]-normls[0]);
-    	FloatElement ac = (normls[2]-normls[0]);
+    	FloatElement ab = (current[1]-current[0]);
+    	FloatElement ac = (current[2]-current[0]);
     	/* calcule du produit vectoriel de ab^ac */
     	FloatElement normal = (ac)^(ab);
     	normal.normaliser();
 
     	float intensity = normal.x*focus.x + normal.y*focus.y + normal.z*focus.z;
         if(intensity>0){
-            triangle(pts, textures, z_buffer, image, africanDiffuse);
+            triangle(pts, textures, z_buffer, image, africanDiffuse, intensity);
         }
     }
 
