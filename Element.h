@@ -8,6 +8,8 @@
 #ifndef ELEMENT_H_
 #define ELEMENT_H_
 #include <cmath>
+#include <iostream>
+#include <fstream>
 
 using namespace std;
 
@@ -23,7 +25,8 @@ class Element {
         Element<T> operator-(const Element &e) const;
         Element<T> operator*(const Element &e) const;
         Element<T> operator^(const Element &e) const;
-        void normaliser();
+        T operator[](int i) const;
+        Element<T> normaliser();
 
 };
 

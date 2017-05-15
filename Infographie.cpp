@@ -31,7 +31,9 @@ const TGAColor yellow = TGAColor(255, 255, 0, 255);
 Model *model = NULL;
 const int width  = 800;
 const int height = 800;
-FloatElement focus(1,-1,1);
+FloatElement focus = FloatElement(1,-1,1).normaliser();
+FloatElement eye(1,1,3);
+FloatElement center(0,0,0);
 
 
 Matrix viewport(int x, int y, int w, int h) {
@@ -44,6 +46,21 @@ Matrix viewport(int x, int y, int w, int h) {
 	view(1,1) = h/2.f;
 	view(2,2) = (w+h)/2.f;
 	return view;
+}
+
+Matrix lookat(FloatElement eye, FloatElement center, FloatElement up) {
+    FloatElement z = (eye-center).normaliser();
+    FloatElement x = (up^z).normaliser();
+    FloatElement y = (z^x).normaliser();
+    Matrix res(4,4);
+    res(0,0) = res(1,1) = res(2,2) = res(3,3) = 1;
+    for (int i=0; i<3; i++) {
+        res(0,i) = x[i];
+        res(1,i) = y[i];
+        res(2,i) = z[i];
+        res(i,3) = -center[i];
+    }
+    return res;
 }
 
 void line(FloatElement p0, FloatElement p1, TGAImage &image, TGAColor color) {
@@ -99,7 +116,7 @@ void triangle(FloatElement *e, FloatElement *e_texture, float *f_intensity, floa
             if(barycentric(aire_e, e, tmp,alpha,beta,gamma)){
                 if(z_buffer[i][j] < tmp.z){
                     z_buffer[i][j] = tmp.z;
-                    ity = (f_intensity[0]*alpha + f_intensity[1]*beta + f_intensity[2]*gamma)*texture.get_width();
+                    ity = (f_intensity[0]*alpha + f_intensity[1]*beta + f_intensity[2]*gamma);
                     image.set(i, j, TGAColor(255, 255, 255)*ity);
                 }
             }
@@ -134,7 +151,9 @@ int main(int argc, char** argv) {
     }
 
     TGAImage image(width, height, TGAImage::RGB);
-    Matrix view = viewport(width/8, height/8, width*3/4, height*3/4);
+    Matrix viewPort = viewport(width/8, height/8, width*3/4, height*3/4);
+    Matrix modelView = lookat(eye, center, FloatElement(0,1,0));
+    Matrix projection = perspective();
 
     float **z_buffer = new float*[width];
     for (int i=0; i<width; i++)
@@ -144,11 +163,10 @@ int main(int argc, char** argv) {
             z_buffer[i][j] = -std::numeric_limits<float>::max();
         }
     }
-    focus.normaliser();
 
     /* gestion de la perspective */
     Matrix tmp(4,1);
-    Matrix perse = perspective();
+
 
     TGAImage africanDiffuse;
     africanDiffuse.read_tga_file("obj/african_head_diffuse.tga");
@@ -162,13 +180,13 @@ int main(int argc, char** argv) {
     	for (int j=0; j<3; j++) {
 			FloatElement v0 = model->getElement(0,face[j].x);
             FloatElement v2 = model->getElement(2,face[j].z);
-            pts[j] = tmp.convMtoE(view*perse*tmp.convEtoM(v0));
+            pts[j] = tmp.convMtoE(viewPort*projection*modelView*tmp.convEtoM(v0));
             intensity[j] = v2.x*focus.x + v2.y*focus.y + v2.z*focus.z;
     	}
     	triangle(pts, textures, intensity, z_buffer, image, africanDiffuse);
     }
 
-    image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
+    image.flip_vertically();
     image.write_tga_file("buffer.tga");
     delete model;
     return 0;

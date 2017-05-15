@@ -37,11 +37,26 @@ Element<T> Element<T>::operator ^ (const Element<T> &e) const{
 }
 
 template <class T>
-void Element<T>::normaliser(){
+T Element<T>::operator[](int i) const{
+    if (i<0 || i>3){
+		cerr << "ERREUR: Depacement indice" << endl;
+	}
+    switch(i){
+        case 0: return x; break;
+        case 1: return y; break;
+        case 2: return z; break;
+    }
+    return 0;
+}
+
+template <class T>
+Element<T> Element<T>::normaliser(){
+    Element res;
 	double tmp = sqrt(x*x + y*y + z*z);
 	x /= tmp;
 	y /= tmp;
 	z /= tmp;
+	return *this;
 }
 
 
