@@ -15,9 +15,10 @@
 #include <iostream>
 #include <cstdlib>
 #include <cmath>
+#include <limits>
 #include "model.h"
 #include "tgaimage.h"
-#include <limits>
+
 
 using namespace std;
 
