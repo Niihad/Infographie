@@ -3,8 +3,7 @@
 
 #include "Element.h"
 
-class Matrix
-{
+class Matrix{
     public:
         Matrix();
         Matrix(int n);
