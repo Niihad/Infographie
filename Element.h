@@ -7,6 +7,7 @@
 
 #ifndef ELEMENT_H_
 #define ELEMENT_H_
+#include <cmath>
 
 using namespace std;
 
@@ -16,6 +17,12 @@ class Element {
 		Element(T x, T y, T z);
 		Element(T a, T b);
 		T x, y, z;
+
+		Element<T> operator+(const Element &e) const;
+        Element<T> operator-(const Element &e) const;
+        Element<T> operator*(const Element &e) const;
+        Element<T> operator^(const Element &e) const;
+        void normaliser();
 
 };
 

@@ -28,6 +28,7 @@ class Model {
 		vector<vector<IntElement> > getFaces();
 		FloatElement getElement(int i, int j);
 		vector<IntElement> getFace(int i);
+
 	private:
 		vector<vector<IntElement> > faces;
 		vector<vector<FloatElement> > elements;
