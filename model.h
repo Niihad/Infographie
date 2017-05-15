@@ -1,20 +1,36 @@
-#ifndef __MODEL_H__
-#define __MODEL_H__
+/*
+ * Model.h
+ *
+ *  Created on: 12 mai 2017
+ *      Author: Achyle
+ */
 
+#ifndef MODEL_H_
+#define MODEL_H_
+
+#include <string>
+#include <iostream>
+#include <fstream>
 #include <vector>
-#include "geometry.h"
+#include <sstream>
+
+#include "Element.h"
+
+using namespace std;
 
 class Model {
-private:
-	std::vector<Vec3f> verts_;
-	std::vector<std::vector<int> > faces_;
-public:
-	Model(const char *filename);
-	~Model();
-	int nverts();
-	int nfaces();
-	Vec3f vert(int i);
-	std::vector<int> face(int idx);
+	public:
+		Model(string filename);
+		void buildStructFile(string filename);
+		void buildElement(vector<FloatElement> &element, istringstream *iss);
+		void buildFace(vector<int> &element, string buildline);
+		vector<vector<FloatElement> > getElements();
+		vector<vector<IntElement> > getFaces();
+		FloatElement getElement(int i, int j);
+		vector<IntElement> getFace(int i);
+	private:
+		vector<vector<IntElement> > faces;
+		vector<vector<FloatElement> > elements;
 };
 
-#endif //__MODEL_H__
+#endif /* MODEL_H_ */

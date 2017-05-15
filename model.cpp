@@ -1,54 +1,89 @@
-#include <iostream>
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <vector>
-#include "model.h"
+/*
+ * Model.cpp
+ *
+ *  Created on: 12 mai 2017
+ *      Author: Achyle
+ */
 
-Model::Model(const char *filename) : verts_(), faces_() {
-    std::ifstream in;
-    in.open (filename, std::ifstream::in);
-    if (in.fail()) return;
-    std::string line;
-    while (!in.eof()) {
-        std::getline(in, line);
-        std::istringstream iss(line.c_str());
-        char trash;
-        if (!line.compare(0, 2, "v ")) {
-            iss >> trash;
-            Vec3f v;
-            for (int i=0;i<3;i++) iss >> v.raw[i];
-            verts_.push_back(v);
-        } else if (!line.compare(0, 2, "f ")) {
-            std::vector<int> f;
-            int itrash, idx;
-            iss >> trash;
-            while (iss >> idx >> trash >> itrash >> trash >> itrash) {
-                idx--; // in wavefront obj all indices start at 1, not zero
-                f.push_back(idx);
+#include "Model.h"
+
+Model::Model(string filename) {
+	buildStructFile(filename);
+}
+
+void Model::buildStructFile(string filename){
+    ifstream file(filename.c_str(), ifstream::in);
+    if(file){
+        string ligne;
+        istringstream iss;
+        vector<FloatElement > verteces;
+        vector<FloatElement > textures;
+        vector<FloatElement > normals;
+        float x,y,z;
+        while (getline(file, ligne, '\n')){
+            char space;
+            istringstream iss(ligne.c_str());
+			/* la ligne correspond a un sommet */
+            if(ligne[0]=='v' && ligne[1]==' '){
+                iss >> space;
+                iss >> x >> y >> z;
+                FloatElement vertex(x,y,z);
+                verteces.push_back(vertex);
+            }else if(ligne[0] == 'v' && ligne[1] == 't'){
+            	iss >> space >> space;
+                iss >> x >> y;
+                FloatElement texture(x,y);
+                textures.push_back(texture);
+            /* la ligne correspond a une normale */
+            }else if(ligne[0] == 'v' && ligne[1] == 'n'){
+            	iss >> space >> space;
+                iss >> x >> y >> z;
+                FloatElement normal(x,y,z);
+                normals.push_back(normal);
+			/* la ligne correspond a une face */
+            }else if(ligne[0] == 'f' && ligne[1]==' '){
+                iss >> space;
+                vector<IntElement> face;
+                while (iss >> x >> space >> y >> space >> z) {
+                    IntElement elem(x-1,y-1,z-1);
+                    face.push_back(elem);
+                }
+                faces.push_back(face);
             }
-            faces_.push_back(f);
         }
+        elements.push_back(verteces);
+    }else{
+        cerr << "ERREUR : Lecture impossible du fichier !" << endl;
     }
-    std::cerr << "# v# " << verts_.size() << " f# "  << faces_.size() << std::endl;
 }
 
-Model::~Model() {
+void Model::buildFace(vector<int> &element, string buildline){
+    /* La classe istringstream permet de lire a partir d'une chaine de caracteres */
+    istringstream iss (buildline);
+	char split;
+	int x, y, z;
+	/* convertion des donnees lu dans iss */
+	iss >> x >> split >> y >> split >> z;
+	cout << x << " " << y << " " << z << " | " << buildline << endl;
+	element.push_back(x);
+	element.push_back(y);
+	element.push_back(z);
 }
 
-int Model::nverts() {
-    return (int)verts_.size();
+vector<vector<FloatElement> > Model::getElements(){
+    return elements;
 }
 
-int Model::nfaces() {
-    return (int)faces_.size();
+vector<vector<IntElement> > Model::getFaces(){
+	return faces;
 }
 
-std::vector<int> Model::face(int idx) {
-    return faces_[idx];
+FloatElement Model::getElement(int i, int j){
+    return elements[i][j];
 }
 
-Vec3f Model::vert(int i) {
-    return verts_[i];
+vector<IntElement> Model::getFace(int i){
+    return faces[i];
 }
+
 
