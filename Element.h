@@ -14,6 +14,7 @@ using namespace std;
 template <class T>
 class Element {
 	public:
+	    Element();
 		Element(T x, T y, T z);
 		Element(T a, T b);
 		T x, y, z;

@@ -10,6 +10,8 @@
 using namespace std;
 
 template <class T>
+Element<T>::Element(){}
+template <class T>
 Element<T>::Element(T a, T b, T c): x(a), y(b), z(c){}
 template <class T>
 Element<T>::Element(T a, T b): x(a), y(b), z(0){}

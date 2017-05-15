@@ -22,8 +22,6 @@ class Model {
 	public:
 		Model(string filename);
 		void buildStructFile(string filename);
-		void buildElement(vector<FloatElement> &element, istringstream *iss);
-		void buildFace(vector<int> &element, string buildline);
 		vector<vector<FloatElement> > getElements();
 		vector<vector<IntElement> > getFaces();
 		FloatElement getElement(int i, int j);

@@ -52,22 +52,11 @@ void Model::buildStructFile(string filename){
             }
         }
         elements.push_back(verteces);
+        elements.push_back(textures);
+        elements.push_back(normals);
     }else{
         cerr << "ERREUR : Lecture impossible du fichier !" << endl;
     }
-}
-
-void Model::buildFace(vector<int> &element, string buildline){
-    /* La classe istringstream permet de lire a partir d'une chaine de caracteres */
-    istringstream iss (buildline);
-	char split;
-	int x, y, z;
-	/* convertion des donnees lu dans iss */
-	iss >> x >> split >> y >> split >> z;
-	cout << x << " " << y << " " << z << " | " << buildline << endl;
-	element.push_back(x);
-	element.push_back(y);
-	element.push_back(z);
 }
 
 vector<vector<FloatElement> > Model::getElements(){
