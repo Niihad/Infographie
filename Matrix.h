@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include "Element.h"
+#define ZERO 1e-8
 
 class Matrix{
     public:
@@ -21,8 +22,18 @@ class Matrix{
         Matrix operator + (const Matrix &mat) const;
         Matrix operator - (const Matrix &mat) const;
         Matrix operator * (const double nb) const;
+        Matrix &operator = (const Matrix &mat);
+        Matrix operator /(const double nb) const;
         FloatElement convMtoE(Matrix mat);
         Matrix convEtoM(FloatElement elm);
+        Matrix translation(FloatElement deplacement);
+        Matrix identity();
+        Matrix resiz(float red);
+        Matrix rotation(FloatElement angle);
+        Matrix modelView(FloatElement angle, float zoom);
+
+        Matrix inverse(Matrix &A);
+
 };
 
 #endif // MATRIX_H

@@ -19,12 +19,14 @@
 #include "model.h"
 #include "tgaimage.h"
 #include "Matrix.h"
+# define PI 3.14159265358979323846 /* pi */
 
 using namespace std;
 
 Model *model = NULL;
 const int width  = 800;
 const int height = 800;
+//FloatElement focus = FloatElement(0,0,-1);
 FloatElement focus = FloatElement(1,-1,1).normaliser();
 FloatElement eye(1,1,3);
 FloatElement center(0,0,0);
@@ -83,19 +85,37 @@ bool barycentric(float aire_e, FloatElement *e, FloatElement &p, float &alpha, f
     return ((fabs(res - 1) < 0.01)) ? true : false;
 }
 
+/* applique un effet de contracte aux rendu  */
 void contraste(TGAColor &co) {
     for(int i=2;i>=0;i--){
         co.bgra[i] = (3*pow((co.bgra[i]/256),2) - 2*pow((co.bgra[i]/256),3))*256;
     }
 }
 
+/* applique un effet negatif aux rendu */
 void negatif(TGAColor &co) {
     for(int i=2;i>=0;i--){
         co.bgra[i] = 255 - co.bgra[i];
     }
 }
 
-void triangle(FloatElement *e, FloatElement *e_texture, float *f_intensity, float **z_buffer, TGAImage &img, TGAImage &texture) {
+/* applique au modele la texture */
+TGAColor texture_shader(FloatElement *e_texture, float alpha, float beta, float gamma, TGAImage &texture){
+    float txtX, txtY;
+    txtX = (e_texture[0].x*alpha + e_texture[1].x*beta + e_texture[2].x*gamma)*texture.get_width();
+    txtY = (e_texture[0].y*alpha + e_texture[1].y*beta + e_texture[2].y*gamma)*texture.get_height();
+    return texture.get(txtX,txtY);
+}
+
+/* dessine le modele suivant l'intensité lumineuse -> ombrage Gouraud */
+TGAColor intensity_shader(float *f_intensity, float alpha, float beta, float gamma){
+    float ity;
+    ity = (f_intensity[0]*alpha + f_intensity[1]*beta + f_intensity[2]*gamma);
+    return TGAColor(255, 255, 255)*ity;
+}
+
+
+void triangle(FloatElement *e, FloatElement *e_texture, float *f_intensity, float **z_buffer, TGAImage &img, TGAImage *texture) {
     FloatElement bbmin(std::max(0.f,std::min((float)img.get_width()-1,std::min(e[0].x,std::min(e[1].x,e[2].x)))),
                      std::max(0.f,std::min((float)img.get_height()-1,std::min(e[0].y,std::min(e[1].y,e[2].y)))));
     FloatElement bbmax(std::min((float)img.get_width()-1,std::max(e[0].x,std::max(e[1].x,e[2].x))),
@@ -103,30 +123,34 @@ void triangle(FloatElement *e, FloatElement *e_texture, float *f_intensity, floa
 
     float aire_e = aire(e[0], e[1], e[2]);
     float alpha,beta,gamma;
-    float txtX, txtY, ity;
-
+    float txtX, txtY;
+    //Matrix nmM(4,1), liM(4,1);
+   // for(int k=0;k<3;k++) liM(k,0) = f_intensity[k];
+    //liM.inverse(liM);
     for(int i=bbmin.x; i<=bbmax.x;i++){
         for(int j=bbmin.y; j<=bbmax.y;j++){
             FloatElement tmp(i,j);
             if(barycentric(aire_e, e, tmp,alpha,beta,gamma)){
                 if(z_buffer[i][j] < tmp.z){
                     z_buffer[i][j] = tmp.z;
-                    /*txtX = (e_texture[0].x*alpha + e_texture[1].x*beta + e_texture[2].x*gamma)*texture.get_width();
-                    txtY = (e_texture[0].y*alpha + e_texture[1].y*beta + e_texture[2].y*gamma)*texture.get_height();
-                    TGAColor color = texture.get(txtX,txtY);
-                    img_t.set(i, j, color);*/
 
-                    ity = (f_intensity[0]*alpha + f_intensity[1]*beta + f_intensity[2]*gamma);
-                    TGAColor color = TGAColor(255, 255, 255)*ity;
-                    negatif(color);
-                    img.set(i,j,color);
+                    txtX = (e_texture[0].x*alpha + e_texture[1].x*beta + e_texture[2].x*gamma)*texture[0].get_width();
+                    txtY = (e_texture[0].y*alpha + e_texture[1].y*beta + e_texture[2].y*gamma)*texture[0].get_height();
+                    TGAColor color = texture[0].get(txtX,txtY);
+                    TGAColor colorNm = texture[1].get(txtX,txtY);
+                    FloatElement col = FloatElement(colorNm.bgra[2]/255.f*2.f - 1.f, colorNm.bgra[1]/255.f*2.f - 1.f, colorNm.bgra[0]/255.f*2.f - 1.f).normaliser();
+
+                    float ity = (f_intensity[0]*alpha + f_intensity[1]*beta + f_intensity[2]*gamma);
+                    float res = col.x*ity + col.y*ity + col.z*ity;
+                    img.set(i, j, color*res);
+                    //img.set(i, j, color);
                 }
             }
         }
     }
 }
 
-/* Technique de ombrage plat pour calculer la luminosite d une face*/
+/* Technique de ombrage plat pour calculer la luminosite d une face */
 float ombragePlat(FloatElement *current){
     /* calcule des vecteurs ab et ac */
     FloatElement ab = (current[1]-current[0]);
@@ -147,9 +171,10 @@ int main(int argc, char** argv) {
 
     TGAImage image(width, height, TGAImage::RGB);
     Matrix viewPort = viewport(width/8, height/8, width*3/4, height*3/4);
+    /* deplacement de la camera. Il est possible de deplaceer non pas la camera mais l'objet
+     * grace a la fonction modelView de la classe Matrix */
     Matrix modelView = lookat(eye, center, FloatElement(0,1,0));
     Matrix project = projection();
-
     float **z_buffer = new float*[width];
     for (int i=0; i<width; i++){
         z_buffer[i] = new float[height];
@@ -159,12 +184,14 @@ int main(int argc, char** argv) {
     }
     Matrix tmp(4,1);
 
-    TGAImage africanDiffuse;
-    africanDiffuse.read_tga_file("obj/african_head_diffuse.tga");
-    africanDiffuse.flip_vertically();
+    TGAImage african[2];
+    african[0].read_tga_file("obj/african_head_diffuse.tga");
+    african[0].flip_vertically();
+    african[1].read_tga_file("obj/african_head_nm.tga");
+    african[1].flip_vertically();
     vector<vector<IntElement> > list = model->getFaces();
     for (unsigned int i=0; i<list.size(); i++) {
-        FloatElement pts[3], textures[3];
+        FloatElement pts[3], textures[3], normls[3];
         float intensity[3];
     	vector<IntElement> face = model->getFace(i);
     	for (int j=0; j<3; j++) {
@@ -174,8 +201,9 @@ int main(int argc, char** argv) {
             pts[j] = tmp.convMtoE(viewPort*project*modelView*tmp.convEtoM(v0));
             textures[j] = FloatElement(v1.x, v1.y, v1.z);
             intensity[j] = v2.x*focus.x + v2.y*focus.y + v2.z*focus.z;
+            normls[j] = v0;
     	}
-    	triangle(pts, textures, intensity, z_buffer, image, africanDiffuse);
+        triangle(pts, textures, intensity, z_buffer, image, african);
     }
     image.flip_vertically();
     image.write_tga_file("output.tga");

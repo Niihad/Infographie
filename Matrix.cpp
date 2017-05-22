@@ -14,14 +14,7 @@ Matrix::Matrix(int nb, int mb){
     }
 }
 
-float &Matrix::operator()(unsigned int i, unsigned int j){
-	if (i>n || j>m){
-		cerr << "ERREUR: Depacement indice" << endl;
-	}
-	return matrices[i][j];
-}
-
-
+ /* convertie une matrice (4,1) en un element */
 FloatElement Matrix::convMtoE(Matrix mat){
     float x = mat.matrices[0][0]/mat.matrices[3][0];
     float y = mat.matrices[1][0]/mat.matrices[3][0];
@@ -29,6 +22,7 @@ FloatElement Matrix::convMtoE(Matrix mat){
     return FloatElement(x,y,z);
 }
 
+ /* convertie un element elm en une matrice (4,1) */
 Matrix Matrix::convEtoM(FloatElement elm){
     Matrix mat(4,1);
     mat(0,0) = elm.x;
@@ -38,13 +32,26 @@ Matrix Matrix::convEtoM(FloatElement elm){
     return mat;
 }
 
+
+/******************************************************************************/
+/********************************** OPERATOR **********************************/
+/******************************************************************************/
+
+float &Matrix::operator()(unsigned int i, unsigned int j){
+	if (i>n || j>m){
+		cerr << "ERREUR: Depacement indice" << endl;
+	}
+	return matrices[i][j];
+}
+
+
 Matrix Matrix::operator*(const Matrix &mat) const{
 	Matrix tmp(n, mat.m);
 	/* teste si le calcule matricielle est realisable */
 	if (m == mat.n){
 		for (unsigned int i=0; i<n; i++){
 			for (unsigned int j=0; j<mat.m; j++){
-				for (unsigned int k=0; k<m; k++){ // produit scalaire
+				for (unsigned int k=0; k<m; k++){ // produit vectoriel
 					tmp(i,j) += matrices[i][k] * mat.matrices[k][j];
 				}
 			}
@@ -54,6 +61,7 @@ Matrix Matrix::operator*(const Matrix &mat) const{
 	}
 	return tmp;
 }
+
 
 Matrix Matrix::operator+(const Matrix &mat) const{
 	Matrix tmp(n, m);
@@ -75,7 +83,6 @@ Matrix Matrix::operator-(const Matrix &mat) const{
 	return tmp;
 }
 
-
 Matrix Matrix::operator*(const double nb) const{
 	Matrix tmp(n, m);
 	for (unsigned int i=0; i<n; i++){
@@ -86,4 +93,156 @@ Matrix Matrix::operator*(const double nb) const{
 	return tmp;
 }
 
+Matrix &Matrix::operator=(const Matrix &mat){
+	if (this != &mat){
+		if (mat.n != n || mat.m != m){
+			for (unsigned int i = 0; i<n; i++) // on détruit...
+				delete[] matrices[i];
+			delete[] matrices;
+			n = mat.n;
+			m = mat.m,
+			matrices = new float*[n];
+            for (unsigned int i=0; i<n; i++){
+                matrices[i] = new float[m];
+            }
+		}
 
+		for (unsigned int i = 0; i<n; i++)
+			for (unsigned int j = 0; j<m; j++)
+				matrices[i][j] = mat.matrices[i][j]; // et on copie...
+	}
+	return *this;
+}
+
+Matrix Matrix::operator / (const double nb) const{
+	Matrix tmp = *this;
+	if (nb){
+		for (unsigned int i = 0; i<n; i++)
+			for (unsigned int j = 0; j<n; j++)
+				tmp.matrices[i][j] /= nb;
+	}else{
+		cerr << "ERREUR: division par 0 matricielle impossible" << endl;
+	}
+	return tmp;
+}
+
+
+/******************************************************************************/
+/******************************* TRANSFORMATION *******************************/
+/******************************************************************************/
+
+/* applique une translation entre la base et le deplacement souhaité
+ * retourne un vecteur homogene
+ *  1 0 0 10    10      20
+ *  0 1 0 0     10      10
+ *  0 0 1 0  *  10   =  10
+ *  0 0 0 1      1      1
+ *
+ */
+Matrix Matrix::translation(FloatElement dep){
+    Matrix mat(4,4);
+    mat(3,0) = dep.x;
+    mat(3,1) = dep.y;
+    mat(3,2) = dep.z;
+    mat(0,0) = mat(1,1) = mat(2,2) = mat(3,3) = 1;
+    return mat * *this;
+}
+
+/* matrice d'itentite */
+Matrix Matrix::identity(){
+    Matrix mat(4,4);
+    mat(0,0) = mat(1,1) = mat(2,2) = mat(3,3) = 1;
+    return mat;
+}
+
+/* reedimensionne un vecteur par la valeur red dans toutes les direction
+ *  2 0 0 0     x       2*X
+ *  0 2 0 0     y       2*Y
+ *  0 0 2 0  *  z  =    2*Z
+ *  0 0 0 1     w        W
+ *
+ */
+Matrix Matrix::resiz(float red){
+    Matrix mat(4,4);
+    mat(0,0) = mat(1,1) = mat(2,2) = red;
+    mat(3,3) = 1;
+    return mat * *this;
+}
+
+/* applique une rotation en fonction de l'angle
+ *  1  0  0  0     c  0  s  0      c -s  0  0
+ *  0  c -s  0     0  1  0  0      s  c  0  0
+ *  0  s  c  0  *  -s 0  c  0  *   0  0  1  0
+ *  0  0  0  1     0  0  0  1      0  0  0  1
+ *
+ */
+Matrix Matrix::rotation(FloatElement angle){
+    Matrix matX(4,4);
+    Matrix matY(4,4);
+    Matrix matZ(4,4);
+    matX(0,0) = matX(3,3) = matY(1,1) = matY(3,3) = matZ(2,2) = matZ(3,3) = 1;
+
+    matX(1,1) = matX(2,2) = cos(angle.x);
+    matX(1,2) = -sin(angle.x);
+    matX(2,1) = sin(angle.x);
+
+    matY(0,0) = matY(2,2) = cos(angle.y);
+    matY(0,2) = sin(angle.y);
+    matY(2,0) = -sin(angle.y);
+
+    matZ(0,0) = matZ(1,1) = cos(angle.z);
+    matZ(0,1) = -sin(angle.z);
+    matZ(1,0) = sin(angle.z);
+
+    return matX * matY * matZ * *this;
+}
+
+/* applique un deplacement de l'objet */
+Matrix Matrix::modelView(FloatElement angle, float zoom){
+    return *this * rotation(angle) * resiz(zoom);
+}
+
+
+
+// Function to calculate and store inverse, returns false if
+// matrix is singular
+Matrix Matrix::inverse(Matrix &A){
+    int n = 3 ;
+    float idmat[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}} ;
+    float a[3][3] = {{A(0,0), 0, 0}, {0, A(1,0), 0}, {0, 0, A(2,0)}} ;
+    float b[3] = {11, -1, 5} ;
+    float x[3] = {0, 0, 0} ;
+
+    for(int k = 0; k < n; k++) {
+        if (fabs(a[k][k]) < ZERO) {
+            /// ici à modifier en prenant en compte les combinaisons linéaires
+            cout << "le systeme n'a pas de solution avec cette methode" << endl ;
+        }else {
+            ///normalisation
+            float p = a[k][k] ;
+            for (int j = 0; j < n; j++) {
+                a[k][j] = a[k][j] / p ;
+                idmat[k][j] = idmat[k][j] / p ;
+            }
+            b[k] = b[k] / p ;
+            ///reduction
+            for(int i = 0; i < n; i++) {
+                if (i != k) {
+                    float p = a[i][k] ;
+                    for (int j = 0; j < n; j++) {
+                        a[i][j] = a[i][j] - p * a[k][j] ;
+                        idmat[i][j] = idmat[i][j] - p * idmat[k][j] ;
+                    }
+                    b[i] = b[i] - p * b[k] ;
+                    x[i] = b[i] ;
+                }
+            }
+        }
+    }
+
+    Matrix res(4,1);
+    for(int k=0;k<3;k++)
+        res(k,0) = idmat[k][k];
+    res(3,0) = 1;
+    return res;
+}
