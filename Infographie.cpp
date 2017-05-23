@@ -22,11 +22,11 @@
 
 using namespace std;
 
-const int width  = 800;
-const int height = 800;
+const int width  = 1000;
+const int height = 1000;
 TGAImage image(width, height, TGAImage::RGB);
 FloatElement focus = FloatElement(1,1,1).normaliser();
-FloatElement eye(1,1,3);
+FloatElement eye(0.5f,0.5f,3);
 FloatElement center(0,0,0);
 
 /*********************************************************************************************************/
