@@ -27,6 +27,8 @@ class Element {
         Element<T> operator^(const Element &e) const;
         T operator[](int i) const;
         Element<T> normaliser();
+        void setVal(int i, T val);
+        float produitScalaire(Element v) const;
 
 };
 

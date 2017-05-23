@@ -59,4 +59,21 @@ Element<T> Element<T>::normaliser(){
 	return *this;
 }
 
+template <class T>
+void Element<T>::setVal(int i, T val){
+    if (i<0 || i>3){
+		cerr << "ERREUR: Depacement indice" << endl;
+	}
+    switch(i){
+        case 0: x = val; break;
+        case 1: y = val; break;
+        case 2: z = val; break;
+    }
+}
+
+template <class T>
+float Element<T>::produitScalaire(Element v) const{
+	return this->x*v.x + this->y*v.y + this->z*v.z;
+}
+
 

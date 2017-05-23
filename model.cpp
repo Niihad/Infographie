@@ -5,7 +5,7 @@
  *      Author: Achyle
  */
 
-#include "Model.h"
+#include "model.h"
 
 Model::Model(string filename) {
 	buildStructFile(filename);
