@@ -19,14 +19,12 @@
 #include "model.h"
 #include "tgaimage.h"
 #include "Matrix.h"
-# define PI 3.14159265358979323846 /* pi */
 
 using namespace std;
 
-Model *model = NULL;
 const int width  = 800;
 const int height = 800;
-//FloatElement focus = FloatElement(0,0,-1);
+TGAImage image(width, height, TGAImage::RGB);
 FloatElement focus = FloatElement(1,1,1).normaliser();
 FloatElement eye(1,1,3);
 FloatElement center(0,0,0);
@@ -147,36 +145,9 @@ float ombragePlat(FloatElement *current){
     return (pv.x*focus.x + pv.y*focus.y + pv.z*focus.z);
 }
 
-int main(int argc, char** argv) {
-    if (2==argc) {
-        string str = argv[1];
-        model = new Model(str);
-    } else {
-        model = new Model("obj/african_head.obj");
-    }
-
-    TGAImage image(width, height, TGAImage::RGB);
-    Matrix viewPort = viewport(width/8, height/8, width*3/4, height*3/4);
-    /* deplacement de la camera. Il est possible de deplaceer non pas la camera mais l'objet
-     * grace a la fonction modelView de la classe Matrix */
-    Matrix modelView = lookat(eye, center, FloatElement(0,1,0));
-    Matrix project = projection();
-    float **z_buffer = new float*[width];
-    for (int i=0; i<width; i++){
-        z_buffer[i] = new float[height];
-        for (int j=0; j<height; j++){
-            z_buffer[i][j] = -std::numeric_limits<float>::max();
-        }
-    }
+void print_texture(Model *model, Matrix vPm, float **z_buffer){
     Matrix tmp(4,1);
-
-    TGAImage african[3];
-    african[0].read_tga_file("obj/african_head_diffuse.tga");
-    african[0].flip_vertically();
-    african[1].read_tga_file("obj/african_head_nm.tga");
-    african[1].flip_vertically();
-    african[2].read_tga_file("obj/african_head_spec.tga");
-    african[2].flip_vertically();
+    TGAImage *obj = model->getObjetPrint();
     vector<vector<IntElement> > list = model->getFaces();
     for (unsigned int i=0; i<list.size(); i++) {
         FloatElement pts[3], textures[3], normls[3];
@@ -184,15 +155,41 @@ int main(int argc, char** argv) {
     	for (int j=0; j<3; j++) {
 			FloatElement v0 = model->getElement(0,face[j].x);
             FloatElement v1 = model->getElement(1,face[j].y);
-            pts[j] = tmp.convMtoE(viewPort*project*modelView*tmp.convEtoM(v0));
+            pts[j] = tmp.convMtoE(vPm*tmp.convEtoM(v0));
             textures[j] = FloatElement(v1.x, v1.y, v1.z);
             normls[j] = v0;
     	}
-        triangle(pts, textures, z_buffer, image, african);
+        triangle(pts, textures, z_buffer, image, obj);
     }
+}
+
+int main(int argc, char** argv) {
+
+    Model model[2];
+    model[0] = Model("obj/african/african_head.obj");
+    model[0].choose_print("obj/african/african_head_diffuse.tga", "obj/african/african_head_nm.tga", "obj/african/african_head_spec.tga");
+    model[1] = Model("obj/african/african_head_eye_inner.obj");
+    model[1].choose_print("obj/african/african_head_eye_inner_diffuse.tga", "obj/african/african_head_eye_inner_nm.tga", "obj/african/african_head_eye_inner_spec.tga");
+    //model[2] = Model("obj/african/african_head_eye_outer.obj");
+    //model[2].choose_print("obj/african/african_head_eye_outer_diffuse.tga", "obj/african/african_head_eye_outer_nm.tga", "obj/african/african_head_eye_outer_spec.tga");
+
+    Matrix viewPort = viewport(width/8, height/8, width*3/4, height*3/4);
+    Matrix modelView = lookat(eye, center, FloatElement(0,1,0));
+    Matrix project = projection();
+    Matrix vPm = viewPort*project*modelView;
+    float **z_buffer = new float*[width];
+    for (int i=0; i<width; i++){
+        z_buffer[i] = new float[height];
+        for (int j=0; j<height; j++){
+            z_buffer[i][j] = -std::numeric_limits<float>::max();
+        }
+    }
+
+    for (int k=0; k<2; k++)
+        print_texture(&model[k], vPm, z_buffer);
+
     image.flip_vertically();
     image.write_tga_file("output.tga");
 
-    delete model;
     return 0;
 }

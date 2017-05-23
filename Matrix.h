@@ -4,7 +4,6 @@
 #include <iostream>
 #include <fstream>
 #include "Element.h"
-#define ZERO 1e-8
 
 class Matrix{
     public:
@@ -31,9 +30,6 @@ class Matrix{
         Matrix resiz(float red);
         Matrix rotation(FloatElement angle);
         Matrix modelView(FloatElement angle, float zoom);
-
-        Matrix inverse(Matrix &A);
-
 };
 
 #endif // MATRIX_H

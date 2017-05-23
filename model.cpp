@@ -7,6 +7,8 @@
 
 #include "model.h"
 
+Model::Model(){}
+
 Model::Model(string filename) {
 	buildStructFile(filename);
 }
@@ -73,6 +75,19 @@ FloatElement Model::getElement(int i, int j){
 
 vector<IntElement> Model::getFace(int i){
     return faces[i];
+}
+
+TGAImage* Model::getObjetPrint(){
+    return objetPrint;
+}
+
+void Model::choose_print(string diffuse, string nm, string spec){
+    objetPrint[0].read_tga_file(diffuse.c_str());
+    objetPrint[0].flip_vertically();
+    objetPrint[1].read_tga_file(nm.c_str());
+    objetPrint[1].flip_vertically();
+    objetPrint[2].read_tga_file(spec.c_str());
+    objetPrint[2].flip_vertically();
 }
 
 
